@@ -11,8 +11,8 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 	"strconv"
 )
-
-const tok = "1819449359:AAG2jsR1H1tgxeCcooa-OfNd6zmxmqQQuoQ"
+// set your token
+const tok = "your token"
 type Origin struct{
 	Name string
 	url string
