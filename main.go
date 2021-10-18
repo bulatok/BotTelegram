@@ -3,16 +3,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	tb "gopkg.in/tucnak/telebot.v2"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
-	"time"
-	tb "gopkg.in/tucnak/telebot.v2"
 	"strconv"
+	"time"
 )
-// set your token
-const tok = "your token"
+
+var Tok = "your token"
+
 type Origin struct{
 	Name string
 	url string
@@ -58,6 +60,9 @@ func PrettyHero(h *Hero) string{
 	return res
 }
 func getNum(s string) (int, string){
+	if s == "random"{
+		return rand.Int() % 672 + 1, "OK"
+	}
 	for _, v := range s{
 		if v < '0' || v > '9'{
 			return -1, "ты еблан?"
@@ -81,37 +86,40 @@ func main(){
 
 	// bot implementation
 	b, err := tb.NewBot(tb.Settings{
-		Token: tok,
+		Token: Tok,
 		Poller: &tb.LongPoller{Timeout: 10*time.Second},
 	})
 	if err != nil{
 		log.Fatal(err)
 	}
 
-
+	r := &tb.ReplyMarkup{ResizeReplyKeyboard: true}
+	btnRand := r.Text("random")
+	r.Reply(
+		r.Row(btnRand),
+	)
 	b.Handle("/start", func(m *tb.Message){
-		//btnRand := tb.ReplyMarkup{}
-		b.Send(m.Sender,`Please enter number (1-672) to see a hero from "rick and morty"`)
+		b.Send(m.Sender,`Please enter number (1-672) to see a hero from "rick and morty"`, r)
 	})
 
 	b.Handle(tb.OnText, func(m *tb.Message){
 		var s string
-		//log.Println("Handle1")
-		s = fmt.Sprintf(`"%s" %s `, m.Text, m.Sender.FirstName)
-
 		n, err := getNum(m.Text)
 		if n == -1{
+			s = fmt.Sprintf(`"%s" %s `, m.Text, m.Sender.FirstName)
 			s += fmt.Sprintln(m.Text)
 			b.Send(m.Sender, err)
 		}else{
-			rick := getHero(urlBase + m.Text)
+			s = fmt.Sprintf(`"rand %d" %s `, n, m.Sender.FirstName)
+			rick := getHero(urlBase + strconv.Itoa(n))
 			ph := &tb.Photo{File:tb.FromURL(rick.ImageURL)}	// getting a photo of hero
 			s += fmt.Sprintln(time.Now().Format("02-01-2006 15:04:05"))
-			b.Send(m.Sender, ph)
-			b.Send(m.Sender, PrettyHero(rick))
+			b.Send(m.Sender, ph, r)
+			b.Send(m.Sender, PrettyHero(rick), r)
 		}
 		fmt.Println(s)
 		f.WriteString(s)
 	})
+
 	b.Start()
 }
